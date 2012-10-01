@@ -1,25 +1,21 @@
-'''datasets.py
-Provides functions to load data from csv files into a format that is
+'''datafiles.py
+Provides functions to load data from csv files. Once loaded,
+datasets.py converts the data into a format that is
 intended for easy use with scikit-learn.
-
-Inspired by the sklearn.datasets module:
-http://pydoc.net/scikit-learn/0.9/sklearn.datasets.base
 '''
 
 from collections import defaultdict
 import cPickle as pickle
 import re
 import sys
-import time
-from sklearn.datasets.base import Bunch
+import decorators
 
-DATA_DIR = '~/Desktop/data'
+DATA_DIR = '../../../Desktop/data'
 EPISODES_FILE = 'physiological-full-sparse.csv'
 EPISODES_PICKLE = EPISODES_FILE.replace('csv', 'pkl')
 OUTCOMES_FILE = 'outcomes.csv'
 
 NUM_VARS = 13
-_cache = {}
 
 def _float(x):
     try:
@@ -40,48 +36,39 @@ def _process_episodes_file(f):
         episodes.append((id,  episode))
     return headers, episodes
 
+@decorators.Time
+@decorators.Cache
 def load_episodes():
-    ''' sets up the master dataset from which 
+    ''' Sets up the master dataset from which 
     all other (smaller) datasets are derived
     '''
-    start = time.time()
-    if 'episodes' in _cache: # check cache first
-        return _cache['episodes']
-        
-    headers, episodes, result = None, None, None
+
+    headers, episodes = None, None
     try:     # try to load from pickle (~25 seconds)
         f = open('/'.join((DATA_DIR, EPISODES_PICKLE)))
-        result = pickle.load(f)
+        header, episodes = pickle.load(f)
     except IOError: # fail gracefully so we can try loading from csv
         pass
     else:
         f.close()
 
-    if result is None: # if no pickle, then load from csv (~60 seconds)
+    if episodes is None: # if no pickle, then load from csv (~60 seconds)
         with open('/'.join((DATA_DIR, EPISODES_FILE))) as f:
             headers, episodes = _process_episodes_file(f)
-            result = Bunch(headers=headers, data=episodes)
         with open('/'.join((DATA_DIR, EPISODES_PICKLE)), 'w') as f:
-            pickle.dump(result, f) 
-    
-        
-    _cache['episodes'] = result
-    
-    time_elapsed = time.time() - start
-    print 'Loaded', len(result.data), 'episodes in', time_elapsed, 'seconds'
-    return result
+            pickle.dump((headers, episodes), f) 
 
-def load_outcomes():
-  if 'outcomes' in _cache: # check cache first
-      return _cache['outcomes']
-  
+    print '{0} episodes loaded.'.format(len(episodes))
+    return headers, episodes
+
+@decorators.Time
+@decorators.Cache
+def load_outcomes():  
   with open('/'.join((DATA_DIR, OUTCOMES_FILE))) as f:
       headers = f.readline()
       outcomes = [] 
       for line in f:
           outcomes.append(map(_float, line.split(',')))
   
-  result = Bunch(headers=headers, data=outcomes)
-  _cache['outcomes'] = result
-  return result
+  return headers, outcomes
 
