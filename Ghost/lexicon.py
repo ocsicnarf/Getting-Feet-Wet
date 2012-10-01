@@ -2,7 +2,6 @@
 Lexicon.py
 Efficiently supports checking if a string is a valid English prefix 
 or word. The lexicon is backed by a trie data structure.
-Author: Francisco Cai
 '''
 
 import sys

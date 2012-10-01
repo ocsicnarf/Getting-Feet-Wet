@@ -1,7 +1,6 @@
 '''
 Ghost.py
 Plays the game Ghost. Opponent can be either human or computer.
-Author: Francisco Cai
 '''
 
 import string

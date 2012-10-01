@@ -2,7 +2,6 @@
 Defines an abstract class for computer Ghost players.
 Provides an implementation of a simple computer player
 at the moment
-Author: Francisco Cai
 '''
 
 import string
