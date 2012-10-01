@@ -1,7 +1,7 @@
 Overview:
 
--homework.py: Module that solves a fourth grade math homwork problem.
+- homework.py: Module that solves a fourth grade math homwork problem.
 
--Ghost: Practice writing python. Contains modules that plays the word game Ghost. http://en.wikipedia.org/wiki/Ghost_(game)
+- ghost: Practice writing python. Contains modules that plays the word game Ghost. http://en.wikipedia.org/wiki/Ghost_(game)
 
-
+- prediction
