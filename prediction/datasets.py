@@ -1,43 +1,45 @@
-import datafiles
-import time
+'''
+Returns datasets intended for use with scikit-learn
+algorithms. Inspired by the sklearn.datasets module:
+http://pydoc.net/scikit-learn/0.9/sklearn.datasets.base
+'''
+
 import numpy as np
 from sklearn.datasets.base import Bunch
+import datafiles
+import decorators
 
-_cache = {}
+NUM_STATS = 5
 
+def compute_stats(values):
+    stats = [values.mean(), values.std(), values.max(), values.min(), values.var()]
+    return stats
+
+@decorators.Time
+@decorators.Cache
 def load_physio_stats():
-    if _cache.get('physio_stats') is not None:
-        return _cache.get('physio_stats')
-
-    # TO DO: check for csv file
-    # if file exists, load it from file
-
-    # otherwise, derive it from the master dataset
-    episodes = datafiles.load_episodes().data
-    outcomes = datafiles.load_outcomes().data
+    # if not in cache, derive it from the master dataset
+    headers, episodes = datafiles.load_episodes()
+    headers, outcomes = datafiles.load_outcomes()
     
-    start = time.time();
     # construct the prediction dataset
     num_samples = len(episodes)
-    num_features = 5 * datafiles.NUM_VARS
+    num_features = NUM_STATS * datafiles.NUM_VARS
     data = np.zeros((num_samples, num_features))  
-    for i, (e_id, e_data) in enumerate(episodes):
+    for i, (episode_id, episode_data) in enumerate(episodes):
         for v in range(datafiles.NUM_VARS):
-            if len(e_data[v]) > 0:
-                (times, values) = zip(*e_data[v]) # unzips
+            if len(episode_data[v]) > 0:
+                times, values = zip(*episode_data[v]) # unzips
                 times = np.asarray(times)
                 values = np.asarray(values)
-#                values = values[time < 24 * 60
-                data[i, 5*v : 5*v + 5] = \
-                    [values.mean(), values.std(), values.max(), values.min(), values.var()]
+                # values = values[time < 24 * 60] 
+                data[i, v * NUM_STATS : (v + 1) * NUM_STATS] = compute_stats(values)
     
-    # Take the "DIED" column to be our target variable
+    # take the "DIED" column to be the target variable
     target = np.asarray(zip(*outcomes)[2]) 
 
-    print 'Loaded prediction dataset in', time.time() - start, 'seconds'
     result = Bunch(data=data, target=target, DESCR="description to be filled in") 
-    _cache['physio_stats'] = result
     return result
 
-if __name__ == '__main__':
-    load_physio_stats()
+
+
