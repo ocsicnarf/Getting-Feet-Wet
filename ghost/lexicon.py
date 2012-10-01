@@ -1,5 +1,4 @@
-''' 
-Lexicon.py
+''' Lexicon.py
 Efficiently supports checking if a string is a valid English prefix 
 or word. The lexicon is backed by a trie data structure.
 '''
@@ -97,9 +96,10 @@ if __name__ == '__main__':
     _insert_word('hop')
     _insert_word('hopefulness')
     _dawg.debug_full()
-    print has_prefix('h')         # true
-    print has_prefix('it')        # false
-    print has_prefix('hopefuln')  # true
-    print has_word('hopefuln')    # false
-    print has_word('hopefulness') # true
-
+    print has_prefix('h')            # true
+    print has_prefix('it')           # false
+    print has_prefix('hopefuln')     # true
+    print has_word('hopefuln')       # false
+    print has_word('hopefulness')    # true
+    print valid_continuations('h')   # ['i', 'a', 'o']
+    print valid_continuations('haz') # None
