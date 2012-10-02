@@ -17,7 +17,7 @@ OUTCOMES_FILE = 'outcomes.csv'
 
 NUM_VARS = 13
 
-def _float(x):
+def _float_safe(x):
     try:
         return float(x)
     except ValueError:
@@ -27,7 +27,7 @@ def _process_episodes_file(f):
     headers = f.readline().split(',')
     episodes = []
     for line in f:
-        split = map(float, re.split(',|:', line))
+        split = map(_float_safe, re.split(',|:', line))
         id, data = split[0], split[1:]
         max_time = data[-3] # assuming measurements are in chronological order
         episode = defaultdict(list)
@@ -42,7 +42,6 @@ def load_episodes():
     ''' Sets up the master dataset from which 
     all other (smaller) datasets are derived
     '''
-
     headers, episodes = None, None
     try:     # try to load from pickle (~25 seconds)
         f = open('/'.join((DATA_DIR, EPISODES_PICKLE)))
@@ -68,7 +67,7 @@ def load_outcomes():
       headers = f.readline()
       outcomes = [] 
       for line in f:
-          outcomes.append(map(_float, line.split(',')))
+          outcomes.append(map(_float_safe, line.split(',')))
   
   return headers, outcomes
 
