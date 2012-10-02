@@ -9,10 +9,11 @@ from sklearn.datasets.base import Bunch
 import datafiles
 import decorators
 
-NUM_STATS = 5
+NUM_STATS = 4
 
 def compute_stats(values):
-    stats = [values.mean(), values.std(), values.max(), values.min(), values.var()]
+    # excluded variance (redundant with standard deviation)
+    stats = [values.mean(), values.std(), values.max(), values.min()] 
     return stats
 
 @decorators.Time
@@ -33,12 +34,15 @@ def load_physio_stats():
                 times = np.asarray(times)
                 values = np.asarray(values)
                 # values = values[time < 24 * 60] 
-                data[i, v * NUM_STATS : (v + 1) * NUM_STATS] = compute_stats(values)
+                data[i, v * NUM_STATS : (v + 1) * NUM_STATS] = \
+                    compute_stats(values)
     
-    # take the "DIED" column to be the target variable
-    target = np.asarray(zip(*outcomes)[2]) 
+    r_target = np.asarray(zip(*outcomes)[1])  # length of stay 
+    r_target = np.floor(r_target / (24 * 60 * 60)) # converted from seconds? to days
+    c_target = np.asarray(zip(*outcomes)[2])  # mortality. 0/1 = lived/died
 
-    result = Bunch(data=data, target=target, DESCR="description to be filled in") 
+    result = Bunch(data=data, DESCR="description to be filled in",
+                   r_target=r_target, c_target=c_target) 
     return result
 
 
