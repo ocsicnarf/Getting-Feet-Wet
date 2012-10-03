@@ -92,42 +92,23 @@ def compare_regressors():
         'Lasso': linear_model.Lasso(),
         'LAR': linear_model.Lars(),
         'SGD': linear_model.SGDRegressor(),
-        'ARD': linear_model.ARDRegression() # takes a minute or two
+#        'ARD': linear_model.ARDRegression() # takes a minute or two
         }
     _compare_predictors(regressors, classify=False)
 
 
-@decorators.Time
-def optimize_SVC():
+def _optimize_classifier(param_grid, estimator, score_func):
     X_train, X_test, y_train, y_test = _setup()
-    param_grid = [
-        { 'class_weight': [None, 'auto'],
-          'kernel': ['linear'],
-          'C': [1, 2, 5, 10]},        
-        { 'class_weight': [None, 'auto'],
-          'kernel': ['poly', 'sigmoid'],
-          'C': [1, 2, 5, 10],
-          'degree': [1, 2, 3, 5],
-          'coef0': [0, 0.5, 1, 2],
-          'gamma': [0, 1e-6, 1e-4, 1e-2]},
-        { 'class_weight': [None, 'auto'],
-          'kernel': ['rbf'],
-          'C': [1, 2, 5, 10],
-          'gamma': [0, 1e-4, 0.1, 1]},
-        ]
-
-    print 'Tuning hyper-params for Matthew\'s Correlation Coefficient'
-    classifier = GridSearchCV(estimator=svm.SVC(),
+    classifier = GridSearchCV(estimator=estimator,
                               param_grid=param_grid,
-                              score_func=metrics.matthews_corrcoef,
-                              n_jobs=10,
+                              score_func=score_func,
+                              n_jobs=1,
                               verbose=2)
     classifier.fit(X_train, y_train, cv=5)
-    
-    print 'Best params found on training set:'
+
     print
-    print classifier.best_estimator_
-    print 
+    print 'Tuning hyper-params for', score_func
+    print
     print 'Grid scores on training set'
     classifier.grid_scores_.sort(key=lambda x: -x[1]) # sort by descending mean score
     for params, mean_score, scores in classifier.grid_scores_:
@@ -135,7 +116,48 @@ def optimize_SVC():
             mean_score, scores.std() / 2, params)
     print
 
-    print '--- Best SVM Classifier ---'
-    print 'Params:', classifier.grid_scores_[0][0]
+    print 'Best params found on training set:'
+    print '(scoring func{0})'.format(score_func.__name__)
+    print
+    print classifier.best_estimator_
+    print 
+    print '--- Classifier with best params on test set ---'
     y_pred = classifier.best_estimator_.predict(X_test)
-    _show_results(y_test, y_pred)
+    _show_classification_results(y_test, y_pred)
+
+@decorators.Time
+def optimize_SVC():
+    param_grid = [
+        { 'class_weight': [None, 'auto'],
+          'kernel': ['linear'],
+          'C': [1, 2, 5, 10]},        
+        { 'class_weight': [None, 'auto'],
+          'kernel': ['poly', 'sigmoid'],
+          'C': [1, 2, 5],
+          'degree': [1, 2, 3, 5],
+          'coef0': [0, 0.5, 1, 2],
+          'gamma': [0, 1e-6, 1e-4, 1e-2]},
+        { 'class_weight': [None, 'auto'],
+          'kernel': ['rbf'],
+          'C': [1, 2, 5, 10],
+          'gamma': [0, 1e-4, 0.1, 1]}
+        ]
+
+    # f1_score is weighted by default, so takes class imbalance into account
+    _optimize_classifier(param_grid, svm.SVC(), metrics.metrics.f1_score)
+    #_optimize_classifier(param_grid, svm.SVC(), metrics.matthews_corrcoef)
+
+@decorators.Time
+def optimize_logistic():
+    param_grid = {
+        'class_weight': [None, 'auto'],
+        'penalty': ['l1', 'l2'],
+        'C': [1e-6, 1, 2, 5]
+        }
+
+    _optimize_classifier(param_grid, linear_model.LogisticRegression(), metrics.f1_score) 
+    _optimize_classifier(param_grid, linear_model.LogisticRegression(), metrics.matthews_corrcoef)
+
+
+    
+    
