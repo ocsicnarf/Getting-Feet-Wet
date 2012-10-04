@@ -8,6 +8,7 @@ import time
 import cPickle as pickle
 
 class timed:
+    """ Adds timing code to a function. """
     def __init__(self, function):
         self.function = function
         self.__name__ = function.__name__
@@ -20,6 +21,7 @@ class timed:
         return result
 
 class cached:
+    """ Caches the result of the function in memory. """
     def __init__(self, function):
         self.function = function
         self.__name__ = function.__name__
@@ -33,48 +35,55 @@ class cached:
             return self.cache[args]
 
 class pickled:
+    """ Pickles the result of a function. Takes one argument: the pickle path """
     def __init__(self, pickle_path):
         self.pickle_path = pickle_path
 
     def __call__(self, function):
-        def wrapper(*args):
-            # try unpickling
-            try: 
-                file = open(self.pickle_path)
-                result = pickle.load(file)
-            except IOError:
-                pass # fail gracefully
-            else:
-                file.close()
-                return result
+        class wrapper:
+            def __init__(self, function):
+                self.function = function
+                self.__name__ = function.__name__
             
-            # otherwise load from file, and try pickling
-            result = function(*args)
-            try: 
-                file = open(pickle_path)
-                pickle.dump(result, file)
-            except IOError:
-                print 'Error writing to pickle'
-            else:
-                file.close()
-            return result
-        return wrapper
+            def __call__(*args):
+                # try unpickling
+                try: 
+                    file = open(self.pickle_path)
+                    result = pickle.load(file)
+                except (IOError, EOFError):
+                    pass # fail gracefully
+                else:
+                    file.close()
+                    return result
+            
+                # otherwise load from file, and try pickling
+                result = function(*args)
+                try: 
+                    print self.pickle_path
+                    file = open(self.pickle_path, 'w')
+                    pickle.dump(result, file)
+                except IOError as e:
+                    print 'Error writing to pickle.'
+                else:
+                    file.close()
+                return result
+        return wrapper(function)
 
 class safe:
+    """ Changes a function to return None instead of throwing an exception """
     def __init__(self, function):
         self.function = function
         self.__name__ = function.__name__
 
     def __call__(self, *args):
         try:
-            return function(*args)
+            return self.function(*args)
         except:
             return None
 
 @safe
 def safe_float(x):
     return float(x)
-            
     
 
     
