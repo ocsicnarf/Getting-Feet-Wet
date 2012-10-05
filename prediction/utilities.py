@@ -43,15 +43,16 @@ class pickled:
         self.pickle_path = pickle_path
 
     def __call__(self, function):
+        pickle_path = self.pickle_path
         class wrapper:
             def __init__(self, function):
                 self.function = function
                 self.__name__ = function.__name__
             
-            def __call__(*args):
+            def __call__(self, *args):
                 # try unpickling
                 try: 
-                    file = open(self.pickle_path)
+                    file = open(pickle_path)
                     result = pickle.load(file)
                 except (IOError, EOFError):
                     pass # fail gracefully
@@ -62,8 +63,7 @@ class pickled:
                 # otherwise load from file, and try pickling
                 result = function(*args)
                 try: 
-                    print self.pickle_path
-                    file = open(self.pickle_path, 'w')
+                    file = open(pickle_path, 'w')
                     pickle.dump(result, file)
                 except IOError as e:
                     print 'Error writing to pickle.'
@@ -73,22 +73,32 @@ class pickled:
         return wrapper(function)
 
 class safe:
-    """ Modifies a function to return None instead of throwing an exception """
-    def __init__(self, function):
-        self.function = function
-        self.__name__ = function.__name__
+    """ Modifies a function to return a specified value instead of throwing an 
+    exception 
+    
+    """
+    def __init__(self, other_value):
+        self.other_value = other_value
+        
+    def __call__(self, function):
+        other_value = self.other_value
+        class wrapper:
+            def __init__(self, function):
+                self.function = function
+                self.__name__ = function.__name__
 
-    def __call__(self, *args):
-        try:
-            return self.function(*args)
-        except:
-            return None
+            def __call__(self, *args):
+                try:
+                    return self.function(*args)
+                except:
+                    return other_value
+        return wrapper(function)
 
-@safe
+@safe(None)
 def safe_float(s):
     return float(s)
     
-@safe
+@safe(None)
 def safe_int(s):
     return int(s)
     

@@ -12,7 +12,7 @@ import cPickle as pickle
 import re
 import sys
 import utilities
-from utilities import safe_float
+from utilities import safe_float, safe_int
 
 # Constants
 DATA_FOLDER = '../../../Desktop/data'
@@ -32,8 +32,8 @@ def _parse_episodes_file(f):
         id, data = int(split[0]), map(safe_float, split[1:])
         episode = defaultdict(list)
         for i in range(0, len(data), 3):
-            time, var, value = data[i:i + 3]
-            var = int(var) - 1 # convert from 1- to 0-indexing
+            time, var, value = map(float, data[i:i + 3])
+            var = int(var) - 1 # convert for 0-indexing
             episode[var].append((time, value))
         episodes.append((id,  episode))
     return headers, episodes
@@ -74,12 +74,15 @@ def load_outcomes():
     - medical length of stay (some missing values)
 
     """
-    with open('/'.join((DATA_DIR, OUTCOMES_FILE))) as f:
-        headers = f.readline().strip().split()
+    with open('/'.join((DATA_FOLDER, OUTCOMES_FILE))) as f:
+        headers = f.readline().strip().split(',')
         outcomes = [] 
         for line in f:
             split = line.split(',')
-            outcomes.append(map(safe_float, line.split(',')))
+            id, data = safe_int(split[0]), map(safe_int, split[1:])
+            outcomes.append((id, data))
   
     return headers, outcomes
 
+if __name__ == '__main__':
+    load_outcomes()

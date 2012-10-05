@@ -6,8 +6,8 @@ This module takes data provided by the datafiles module and
 prepares datasets intended for use with scikit-learn
 algorithms. 
 
-The datasets are returned as Bunch objects, which are essentially
-dictionaries with entries exposed as attributes, e.g.
+The datasets are returned as scikit-learn Bunch objects, which are
+essentially dictionaries with entries exposed as attributes, e.g.
     
 >>> my_bunch_object.key
 value 
@@ -22,19 +22,21 @@ import numpy as np
 from sklearn.datasets.base import Bunch
 import datafiles
 import utilities
+import features
 from utilities import unzip
 
-NUM_STATS = 4
-
-def _compute_stats(values):
-    """ Compute basic statistics for a 1d array of values """
-    # excluded variance (redundant with standard deviation)
-    stats = [values.mean(), values.std(), values.max(), values.min()] 
-    return stats
+def _compute_features(measurements, functions):
+    """ Compute basic features for a time series of measurements """
+    features = np.zeros(len(functions))
+    if measurements:
+        times, values = map(np.asarray, unzip(measurements))
+        for i, f in enumerate(functions):
+            features[i] = f(values, times)
+    return features
 
 @utilities.timed
 @utilities.cached
-def load_physio_stats():
+def load_physio(feature_funcs):
     description = """ Loads a dataset containing physiological data. 
 
     It returns a Bunch with the following attributes:
@@ -54,29 +56,27 @@ def load_physio_stats():
     
     # construct the prediction dataset
     num_samples = len(episodes)
-    num_features = NUM_STATS * datafiles.NUM_VARS
+    num_features = len(feature_funcs) * datafiles.NUM_VARS
     data = np.zeros((num_samples, num_features))  
 
     # for each sample (episode)
     for i, (episode_id, episode_data) in enumerate(episodes):
         # compute its features (stats for each physiological variable)
         for v in range(datafiles.NUM_VARS):
-            if episode_data[v]:
-                times, values = unzip(episode_data[v])
-                times = np.asarray(times)
-                values = np.asarray(values)
-                data[i, v * NUM_STATS:(v + 1) * NUM_STATS] = \
-                    _compute_stats(values)
-    
+            start = v * len(feature_funcs)
+            end = (v + 1) * len(feature_funcs)
+            data[i, start:end] =_compute_features(episode_data[v], 
+                                                  feature_funcs)
+
     # obtain the target variables
     episode_ids, episode_outcomes = unzip(outcomes) 
+    los, mortality, med_los = map(np.asarray, unzip(episode_outcomes))
 
     # mortality, for classification
-    c_target = np.asarray(unzip(episode_outcomes)[1])  
+    c_target = mortality  
     
     # length of stay, for regression
-    r_target = np.asarray(unzip(episode_outcomes)[0])
-    r_target = np.floor(r_target / (24 * 60 * 60)) # convert from secs to days
+    r_target = np.floor(los / (24 * 60 * 60)) # convert from secs to days
 
     result = Bunch(data=data,
                    r_target=r_target, 
@@ -84,5 +84,11 @@ def load_physio_stats():
                    DESCR=description) 
     return result
 
+@utilities.timed
+@utilities.cached
+def load_physio_stats():
+    return load_physio(features.STATS)
 
+if __name__ == '__main__':
+    physio = load_physio_stats()
 

@@ -9,6 +9,7 @@ from sklearn.grid_search import GridSearchCV
 import datafiles
 import datasets
 import utilities
+import features
 
 def _setup(test_size=0.75, classify=True):
     """ Loads and splits the data into training and testing sets.
@@ -19,7 +20,7 @@ def _setup(test_size=0.75, classify=True):
 
     """
     # load dataset
-    physio = datasets.load_physio_stats()
+    physio = datasets.load_physio(features.TRY_THIS)
     X = physio.data
     y = physio.c_target if classify else physio.r_target
     n_samples = X.shape[0]
