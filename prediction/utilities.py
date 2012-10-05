@@ -35,7 +35,10 @@ class cached:
             return self.cache[args]
 
 class pickled:
-    """ Pickles the result of a function. Takes one argument: the pickle path """
+    """ Pickles the result of a function. Takes one argument, a file path 
+    for the  pickle.
+    
+    """
     def __init__(self, pickle_path):
         self.pickle_path = pickle_path
 
@@ -70,7 +73,7 @@ class pickled:
         return wrapper(function)
 
 class safe:
-    """ Changes a function to return None instead of throwing an exception """
+    """ Modifies a function to return None instead of throwing an exception """
     def __init__(self, function):
         self.function = function
         self.__name__ = function.__name__
@@ -82,11 +85,14 @@ class safe:
             return None
 
 @safe
-def safe_float(x):
-    return float(x)
+def safe_float(s):
+    return float(s)
     
-
+@safe
+def safe_int(s):
+    return int(s)
     
-                
+def unzip(zipped):
+    return zip(*zipped)
 
         
